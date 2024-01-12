@@ -4,3 +4,8 @@ tags
 result
 *.txt
 .nvimrc
+
+
+# Added by cargo
+
+/target

@@ -6,11 +6,11 @@
 $ fd . --no-hidden --no-ignore | entr -c -s 'cargo run < d6/input.txt'
 ```
 
-## Progress (0/25)
+## Progress (1/25)
 
 |     | Lua    |
 | --- | ------ |
-| 1   | :zzz: |
+| 1   | :bell: |
 | 2   | :zzz: |
 | 3   | :zzz: |
 | 4   | :zzz: |
