@@ -3,7 +3,7 @@
 ## Quickstart
 
 ```shell
-$ fd . --no-hidden --no-ignore | entr -c -s 'cargo run < d6/input.txt'
+$ fd . --no-hidden --no-ignore | entr -c -s 'cargo run --bin d1 < src/bin/d1/in.txt'
 ```
 
 ## Progress (2/25)
