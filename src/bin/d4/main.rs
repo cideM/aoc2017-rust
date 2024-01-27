@@ -1,45 +1,55 @@
 use std::collections::HashSet;
+use std::hash::Hash;
 use std::io;
 use std::ops::ControlFlow;
 
-fn line_has_duplicates(line: &str) -> bool {
-    line.split_whitespace()
-        .try_fold(HashSet::new(), |mut acc, x| {
-            if acc.contains(x) {
-                ControlFlow::Break(acc)
+// Decent explanation of into_iter vs iter check accepted answer:
+// https://stackoverflow.com/questions/34733811/what-is-the-difference-between-iter-and-into-iter
+
+fn find_duplicate_index<T: Eq + Hash>(v: impl IntoIterator<Item = T>) -> Option<usize> {
+    match v
+        .into_iter()
+        .enumerate()
+        .try_fold(HashSet::new(), |mut acc, (i, x)| {
+            if acc.contains(&x) {
+                ControlFlow::Break(i)
             } else {
                 acc.insert(x);
                 ControlFlow::Continue(acc)
             }
-        })
-        .is_continue()
+        }) {
+        ControlFlow::Continue(_) => None,
+        ControlFlow::Break(i) => Some(i),
+    }
+}
+
+fn sort_chars(s: &str) -> String {
+    let mut chars: Vec<char> = s.chars().collect();
+    chars.sort();
+    chars.iter().collect()
 }
 
 fn main() {
-    let p1 = io::stdin()
-        .lines()
-        .map(|result| result.unwrap())
-        .filter(|s| line_has_duplicates(s)) // TODO: why not filter(line_has_duplicates)
-        .collect::<Vec<_>>()
-        .len();
-    println!("{:?}", p1);
+    let mut p1 = 0;
+    let mut p2 = 0;
+    for result in io::stdin().lines() {
+        match result {
+            Ok(line) => {
+                let words = line.split_whitespace();
+                if let None = find_duplicate_index(words.clone()) {
+                    p1 += 1;
+                }
 
-    let p2 = io::stdin()
-        .lines()
-        .map(|result| {
-            let s = result.unwrap();
-			println!("{}", s);
-            let mut sorted: Vec<String> = Vec::new();
-            for word in s.split_whitespace() {
-                let mut chars: Vec<char> = word.chars().collect();
-                chars.sort();
-                sorted.push(chars.into_iter().collect());
+                if let None = find_duplicate_index(words.map(sort_chars)) {
+                    p2 += 1;
+                }
             }
-			println!("{}", sorted.join(" "));
-            sorted.join(" ")
-        })
-        .filter(|s| line_has_duplicates(s)) // TODO: why not filter(line_has_duplicates)
-        .collect::<Vec<_>>()
-        .len();
-    println!("{:?}", p2);
+            Err(e) => {
+                println!("{}", e);
+                std::process::exit(1);
+            }
+        }
+    }
+
+    println!("{} {}", p1, p2);
 }
