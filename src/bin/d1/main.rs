@@ -1,6 +1,8 @@
 use std::io;
 use std::iter;
 
+// TODO: Write versions of this without all the chaining and
+// also see what O(x) this comes down to
 fn main() {
     let mut buffer = String::new();
     io::stdin().read_line(&mut buffer).unwrap();
