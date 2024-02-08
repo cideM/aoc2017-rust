@@ -2,11 +2,61 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::io;
 
-fn compute_weights(
-    parent_child: HashMap<String, Vec<String>>,
-    weights: HashMap<String, usize>,
-) -> Option<usize> {
-	Some(1)
+#[derive(Debug)]
+enum Result {
+    Balanced(usize),
+    Unbalanced(usize),
+}
+
+// TODO: Would be nicer if the inputs were already a tree
+fn find_unbalanced(
+    parent_child: &HashMap<String, Vec<String>>,
+    weights: &HashMap<String, usize>,
+    node: &str,
+) -> Result {
+    let weight = weights
+        .get(node)
+        .expect("expected every node to have a weight");
+
+    match parent_child.get(node).unwrap_or(&Vec::new()).as_slice() {
+        [] => return Result::Balanced(*weight),
+        children => {
+            let mut occurrences: HashMap<usize, Vec<&str>> = HashMap::new();
+            for c in children {
+                match find_unbalanced(parent_child, weights, c) {
+                    Result::Unbalanced(w) => {
+                        return Result::Unbalanced(w);
+                    }
+                    Result::Balanced(w) => {
+                        occurrences.entry(w).or_insert_with(Vec::new).push(c);
+                    }
+                }
+            }
+			// TODO: so much error handling
+            if occurrences.len() == 1 {
+                let (child_weight, nodes) = occurrences
+                    .into_iter()
+                    .next()
+                    .expect("map to have exactly 1 key");
+
+                return Result::Balanced(weight + child_weight * nodes.len());
+            } else {
+				let mut results = occurrences.into_iter().collect::<Vec<(usize, Vec<&str>)>>();
+				results.sort_by_key(|(_, nodes)| nodes.len());
+				match &results[..] {
+					[(incorrect_weight, nodes), (correct_weight, _)] => {
+						let node_name = nodes.get(0).expect("there to be exactly one unbalanced result");
+						let weight = weights.get(*node_name).expect("every node to have a weight");
+						println!("{} {}", node_name, weight);
+						return Result::Unbalanced(weight - (incorrect_weight.abs_diff(*correct_weight)));
+					}
+					results => {
+						panic!("{:?} unexpected number of results", results);
+					}
+				}
+            }
+        }
+    }
 }
 
 fn main() {
@@ -54,7 +104,10 @@ fn main() {
 
     let all_keys = tree.keys().collect::<HashSet<&String>>();
     let all_children = tree.values().flatten().collect::<HashSet<&String>>();
-    println!("{:?}", all_keys.difference(&all_children));
+    let nodes: Vec<&&String> = all_keys.difference(&all_children).collect();
+    let root = nodes.get(0).expect("expected exactly one node");
+    println!("{:?}", root);
 
-    // TODO: recurse
+    let result = find_unbalanced(&tree, &weights, root);
+    println!("{:?}", result);
 }
