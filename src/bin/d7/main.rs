@@ -8,7 +8,6 @@ enum Result {
     Unbalanced(usize),
 }
 
-// TODO: Would be nicer if the inputs were already a tree
 fn find_unbalanced(
     parent_child: &HashMap<String, Vec<String>>,
     weights: &HashMap<String, usize>,
@@ -24,36 +23,36 @@ fn find_unbalanced(
             let mut occurrences: HashMap<usize, Vec<&str>> = HashMap::new();
             for c in children {
                 match find_unbalanced(parent_child, weights, c) {
-                    Result::Unbalanced(w) => {
-                        return Result::Unbalanced(w);
-                    }
-                    Result::Balanced(w) => {
-                        occurrences.entry(w).or_insert_with(Vec::new).push(c);
-                    }
+                    Result::Balanced(w) => occurrences.entry(w).or_insert_with(Vec::new).push(c),
+                    r => return r,
                 }
             }
-			// TODO: so much error handling
-            if occurrences.len() == 1 {
-                let (child_weight, nodes) = occurrences
-                    .into_iter()
-                    .next()
-                    .expect("map to have exactly 1 key");
 
-                return Result::Balanced(weight + child_weight * nodes.len());
-            } else {
-				let mut results = occurrences.into_iter().collect::<Vec<(usize, Vec<&str>)>>();
-				results.sort_by_key(|(_, nodes)| nodes.len());
-				match &results[..] {
-					[(incorrect_weight, nodes), (correct_weight, _)] => {
-						let node_name = nodes.get(0).expect("there to be exactly one unbalanced result");
-						let weight = weights.get(*node_name).expect("every node to have a weight");
-						println!("{} {}", node_name, weight);
-						return Result::Unbalanced(weight - (incorrect_weight.abs_diff(*correct_weight)));
-					}
-					results => {
-						panic!("{:?} unexpected number of results", results);
-					}
-				}
+            match &mut occurrences.into_iter().collect::<Vec<_>>()[..] {
+                [(child_weight, nodes)] => {
+                    return Result::Balanced(weight + *child_weight * nodes.len());
+                }
+                [(child_weight1, nodes1), (child_weight2, nodes2)] => {
+                    let (incorrect_weight, incorrect_weight_nodes, correct_weight) =
+                        if child_weight1 > child_weight2 {
+                            (child_weight1, nodes1, child_weight2)
+                        } else {
+                            (child_weight2, nodes2, child_weight1)
+                        };
+
+                    let node_name = incorrect_weight_nodes
+                        .get(0)
+                        .expect("there to be exactly one unbalanced result");
+                    let weight = weights
+                        .get(*node_name)
+                        .expect("every node to have a weight");
+                    return Result::Unbalanced(
+                        weight - (incorrect_weight.abs_diff(*correct_weight)),
+                    );
+                }
+                results => {
+                    panic!("{:?} unexpected number of results", results);
+                }
             }
         }
     }
